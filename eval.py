@@ -84,7 +84,7 @@ def evaluate(dataset, predictions, tokenizer):
 
 if __name__ == '__main__':
     import tokenization
-    tokenizer = tokenization.FullTokenizer(vocab_file='chinese_L-12_H-768_A-12/vocab.txt')
+    tokenizer = tokenization.FullTokenizer(vocab_file='data/chinese_L-12_H-768_A-12/vocab.txt')
     expected_version = '1.1'
     parser = argparse.ArgumentParser(
         description='Evaluation for SQuAD ' + expected_version)
