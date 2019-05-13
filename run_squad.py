@@ -39,9 +39,9 @@ from modeling import BertConfig, BertForQuestionAnswering
 from optimization import BERTAdam
 from eval import evaluate
 
-logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
-                    datefmt = '%m/%d/%Y %H:%M:%S',
-                    level = logging.INFO)
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
+                    datefmt='%m/%d/%Y %H:%M:%S',
+                    level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -120,7 +120,7 @@ def read_squad_examples(input_file, tokenizer, is_training):
     }
     """
     import unicodedata
-    with open(input_file, "r") as reader:
+    with open(input_file, "r", encoding='utf-8') as reader:
         input_data = json.load(reader)["data"]
 
     def is_whitespace(c):
@@ -175,7 +175,7 @@ def read_squad_examples(input_file, tokenizer, is_training):
                     cleaned_answer_text = "".join(tokenizer.basic_tokenizer.tokenize(orig_answer_text))
                     ori_start_position = "".join(doc_tokens).find(cleaned_answer_text)
                     if ori_start_position == -1:
-                        print("Could not find answer: '%s' vs. '%s'",  ''.join(doc_tokens), cleaned_answer_text)
+                        print("Could not find answer: '%s' vs. '%s'", ''.join(doc_tokens), cleaned_answer_text)
                         continue
                     ori_end_position = ori_start_position + len(cleaned_answer_text) - 1
                     char_to_word_offset = {}
@@ -445,7 +445,6 @@ def _check_is_max_context(doc_spans, cur_span_index, position):
     return cur_span_index == best_span_index
 
 
-
 RawResult = collections.namedtuple("RawResult",
                                    ["unique_id", "start_logits", "end_logits"])
 
@@ -648,7 +647,7 @@ def get_final_text(pred_text, orig_text, do_lower_case, verbose_logging=False):
     if len(orig_ns_text) != len(tok_ns_text):
         if verbose_logging:
             logger.info("Length not equal after stripping spaces: '%s' vs '%s'",
-                            orig_ns_text, tok_ns_text)
+                        orig_ns_text, tok_ns_text)
         return orig_text
 
     # We then project the characters in `pred_text` back to `orig_text` using
@@ -782,25 +781,27 @@ def main():
     parser = argparse.ArgumentParser()
 
     ## Required parameters
-    parser.add_argument("--bert_config_file", default='data/bert_config.json', type=str,
+    parser.add_argument("--bert_config_file", default='data/chinese_L-12_H-768_A-12/bert_config.json', type=str,
                         help="The config json file corresponding to the pre-trained BERT model. "
                              "This specifies the model architecture.")
-    parser.add_argument("--vocab_file", default='data/vocab.txt', type=str,
+    parser.add_argument("--vocab_file", default='data/chinese_L-12_H-768_A-12/vocab.txt', type=str,
                         help="The vocabulary file that the BERT model was trained on.")
     parser.add_argument("--output_dir", default='output', type=str,
                         help="The output directory where the model checkpoints will be written.")
     parser.add_argument("--processed_data", default='processed', type=str,
                         help="The output directory where the model checkpoints will be written.")
-    parser.add_argument("--do_train", default=False, action='store_true', help="Whether to run training.")
+    parser.add_argument("--do_train", default=True, action='store_true', help="Whether to run training.")
     parser.add_argument("--do_predict", default=False, action='store_true',
                         help="Whether to run eval on the dev set.")
 
     ## Other parameters
-    parser.add_argument("--train_file", default='data/squad_train.json', type=str,
+    parser.add_argument("--train_file", default='data/tripleIE/train-v1.1.json', type=str,
                         help="SQuAD json for training. E.g., train-v1.1.json")
-    parser.add_argument("--predict_file", default='data/squad_dev.json', type=str,
+    parser.add_argument("--predict_file", default='data/tripleIE/dev-v1.1.json', type=str,
                         help="SQuAD json for predictions. E.g., dev-v1.1.json or test-v1.1.json")
-    parser.add_argument("--init_checkpoint", default='data/pytorch_model.bin', type=str,
+    # parser.add_argument("--init_checkpoint", default='data/pytorch_model.bin', type=str,
+    #                     help="Initial checkpoint (usually from a pre-trained BERT model).")
+    parser.add_argument("--init_checkpoint", default=None, type=str,
                         help="Initial checkpoint (usually from a pre-trained BERT model).")
     parser.add_argument("--finetuned_checkpoint", default='ft_dir/ft_model.bin', type=str,
                         help="finetuned checkpoint (usually from a pre-trained BERT model).")
@@ -871,7 +872,7 @@ def main():
 
     if args.accumulate_gradients < 1:
         raise ValueError("Invalid accumulate_gradients parameter: {}, should be >= 1".format(
-                            args.accumulate_gradients))
+            args.accumulate_gradients))
 
     args.train_batch_size = int(args.train_batch_size / args.accumulate_gradients)
 
@@ -979,7 +980,7 @@ def main():
     optimizer_parameters = [
         {'params': [p for n, p in model.named_parameters() if n not in no_decay], 'weight_decay_rate': 0.01},
         {'params': [p for n, p in model.named_parameters() if n in no_decay], 'weight_decay_rate': 0.0}
-        ]
+    ]
 
     optimizer = BERTAdam(optimizer_parameters,
                          lr=args.learning_rate,
@@ -1015,12 +1016,12 @@ def main():
                 input_ids, input_mask, segment_ids, start_positions, end_positions = batch
                 loss = model(input_ids, segment_ids, input_mask, start_positions, end_positions)
                 if n_gpu > 1:
-                    loss = loss.mean() # mean() to average on multi-gpu.
+                    loss = loss.mean()  # mean() to average on multi-gpu.
                 if args.gradient_accumulation_steps > 1:
                     loss = loss / args.gradient_accumulation_steps
                 loss.backward()
                 if (step + 1) % args.gradient_accumulation_steps == 0:
-                    optimizer.step()    # We have accumulated enought gradients
+                    optimizer.step()  # We have accumulated enought gradients
                     model.zero_grad()
                     global_step += 1
 
