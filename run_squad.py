@@ -580,10 +580,10 @@ def write_predictions(all_examples, all_features, all_results, n_best_size,
 
 def write_to_file(all_predictions, all_nbest_json, output_prediction_file, output_nbest_file):
     with open(output_prediction_file, "w") as writer:
-        writer.write(json.dumps(all_predictions, indent=4) + "\n")
+        writer.write(json.dumps(all_predictions, ensure_ascii=False, indent=4) + "\n")
 
     with open(output_nbest_file, "w") as writer:
-        writer.write(json.dumps(all_nbest_json, indent=4) + "\n")
+        writer.write(json.dumps(all_nbest_json, ensure_ascii=False, indent=4) + "\n")
 
 
 def get_final_text(pred_text, orig_text, do_lower_case, verbose_logging=False):
@@ -771,13 +771,14 @@ def run_evaluate(args, model, eval_features, device, eval_examples, tokenizer, b
         logger.info('Saving model with dev score: {}'.format(dev_score))
         best_dev_score = dev_score
         write_to_file(predict, nbest, output_prediction_file, output_nbest_file)
-        torch.save(model.state_dict(), args.finetuned_checkpoint)
+        torch.save(model.state_dict(), 'ft_dir/ft_model.bin')
     else:
         write_to_file(predict, nbest, output_prediction_file, output_nbest_file)
     return best_dev_score
 
 
 def main():
+    global eval_features, eval_examples
     parser = argparse.ArgumentParser()
 
     ## Required parameters
@@ -791,7 +792,7 @@ def main():
     parser.add_argument("--processed_data", default='processed', type=str,
                         help="The output directory where the model checkpoints will be written.")
     parser.add_argument("--do_train", default=True, action='store_true', help="Whether to run training.")
-    parser.add_argument("--do_predict", default=False, action='store_true',
+    parser.add_argument("--do_predict", default=True, action='store_true',
                         help="Whether to run eval on the dev set.")
 
     ## Other parameters
@@ -803,7 +804,9 @@ def main():
     #                     help="Initial checkpoint (usually from a pre-trained BERT model).")
     parser.add_argument("--init_checkpoint", default=None, type=str,
                         help="Initial checkpoint (usually from a pre-trained BERT model).")
-    parser.add_argument("--finetuned_checkpoint", default='ft_dir/ft_model.bin', type=str,
+    # parser.add_argument("--finetuned_checkpoint", default='ft_dir/ft_model.bin', type=str,
+    #                     help="finetuned checkpoint (usually from a pre-trained BERT model).")
+    parser.add_argument("--finetuned_checkpoint", default=None, type=str,
                         help="finetuned checkpoint (usually from a pre-trained BERT model).")
     parser.add_argument("--do_lower_case", default=True, action='store_true',
                         help="Whether to lower case the input text. Should be True for uncased "
@@ -822,12 +825,12 @@ def main():
     parser.add_argument("--train_batch_size", default=12, type=int, help="Total batch size for training.")
     parser.add_argument("--predict_batch_size", default=8, type=int, help="Total batch size for predictions.")
     parser.add_argument("--learning_rate", default=5e-5, type=float, help="The initial learning rate for Adam.")
-    parser.add_argument("--num_train_epochs", default=5.0, type=float,
+    parser.add_argument("--num_train_epochs", default=2, type=float,
                         help="Total number of training epochs to perform.")
     parser.add_argument("--warmup_proportion", default=0.1, type=float,
                         help="Proportion of training to perform linear learning rate warmup for. E.g., 0.1 = 10% "
                              "of training.")
-    parser.add_argument("--save_checkpoints_steps", default=100, type=int,
+    parser.add_argument("--save_checkpoints_steps", default=10, type=int,
                         help="How often to save the model checkpoint.")
     parser.add_argument("--iterations_per_loop", default=1000, type=int,
                         help="How many steps to make in each estimator call.")
@@ -906,8 +909,9 @@ def main():
         raise ValueError("Output directory () already exists and is not empty.")
     os.makedirs(args.output_dir, exist_ok=True)
 
-    if not os.path.exists(args.finetuned_checkpoint):
-        os.makedirs(args.finetuned_checkpoint, exist_ok=True)
+    if args.finetuned_checkpoint is not None:
+        if not os.path.exists(args.finetuned_checkpoint):
+            os.makedirs(args.finetuned_checkpoint, exist_ok=True)
 
     tokenizer = tokenization.FullTokenizer(
         vocab_file=args.vocab_file, do_lower_case=args.do_lower_case)
@@ -958,7 +962,7 @@ def main():
         logger.info('Loading init checkpoint')
         model.bert.load_state_dict(torch.load(args.init_checkpoint, map_location='cpu'))
         logger.info('Loaded init checkpoint')
-    elif args.do_predict:
+    elif args.do_predict and args.finetuned_checkpoint is not None:
         logger.info('Loading fine-tuned checkpoint')
         state_dict = torch.load(args.finetuned_checkpoint, map_location='cpu')
         new_state_dict = collections.OrderedDict()
