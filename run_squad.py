@@ -796,9 +796,9 @@ def main():
                         help="Whether to run eval on the dev set.")
 
     ## Other parameters
-    parser.add_argument("--train_file", default='data/tripleIE/train-v1.1.json', type=str,
+    parser.add_argument("--train_file", default='data/squad/train-v1.1.json', type=str,
                         help="SQuAD json for training. E.g., train-v1.1.json")
-    parser.add_argument("--predict_file", default='data/tripleIE/dev-v1.1.json', type=str,
+    parser.add_argument("--predict_file", default='data/squad/dev-v1.1.json', type=str,
                         help="SQuAD json for predictions. E.g., dev-v1.1.json or test-v1.1.json")
     # parser.add_argument("--init_checkpoint", default='data/pytorch_model.bin', type=str,
     #                     help="Initial checkpoint (usually from a pre-trained BERT model).")
@@ -816,13 +816,13 @@ def main():
                              "longer than this will be truncated, and sequences shorter than this will be padded.")
     parser.add_argument("--doc_stride", default=128, type=int,
                         help="When splitting up a long document into chunks, how much stride to take between chunks.")
-    parser.add_argument("--max_query_length", default=128, type=int,
+    parser.add_argument("--max_query_length", default=500, type=int,
                         help="The maximum number of tokens for the question. Questions longer than this will "
                              "be truncated to this length.")
-    parser.add_argument("--max_answer_length", default=128, type=int,
+    parser.add_argument("--max_answer_length", default=500, type=int,
                         help="The maximum length of an answer that can be generated. This is needed because the start "
                              "and end predictions are not conditioned on one another.")
-    parser.add_argument("--train_batch_size", default=12, type=int, help="Total batch size for training.")
+    parser.add_argument("--train_batch_size", default=10, type=int, help="Total batch size for training.")
     parser.add_argument("--predict_batch_size", default=8, type=int, help="Total batch size for predictions.")
     parser.add_argument("--learning_rate", default=5e-5, type=float, help="The initial learning rate for Adam.")
     parser.add_argument("--num_train_epochs", default=2, type=float,
@@ -830,7 +830,7 @@ def main():
     parser.add_argument("--warmup_proportion", default=0.1, type=float,
                         help="Proportion of training to perform linear learning rate warmup for. E.g., 0.1 = 10% "
                              "of training.")
-    parser.add_argument("--save_checkpoints_steps", default=10, type=int,
+    parser.add_argument("--save_checkpoints_steps", default=50, type=int,
                         help="How often to save the model checkpoint.")
     parser.add_argument("--iterations_per_loop", default=1000, type=int,
                         help="How many steps to make in each estimator call.")
